@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Post FFLAGS - Community Tweak Registry</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bgMain: '#0b0b0c',
+                        bgSurface: '#121214',
+                        borderZinc: '#242427',
+                        accentBlue: '#3b82f6'
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'Courier', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-zinc-300 text-sm antialiased min-h-screen flex flex-col font-sans overflow-x-hidden w-full">
+
+    <header class="border-b border-borderZinc bg-bgSurface/40 py-4 px-4 w-full">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <div class="flex items-center gap-3 cursor-pointer" onclick="resetFiltersAndHome()">
+                <div class="font-mono text-white font-bold text-lg tracking-tight">
+                    fflags.txt
+                </div>
+                <div class="h-4 w-[1px] bg-borderZinc hidden sm:block"></div>
+                <span class="text-xs text-zinc-500 hidden sm:block">Roblox optimization repository</span>
+            </div>
+
+            <div class="w-full md:w-96">
+                <input type="text" id="global-search" oninput="handleSearch(this.value)" placeholder="Search keys, descriptions, or users..." class="w-full bg-bgMain border border-borderZinc rounded px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono" />
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="openUploadModal()" class="bg-zinc-100 hover:bg-white text-black px-3 py-1.5 rounded text-xs font-semibold transition">
+                    + Post Tweak
+                </button>
+                <div id="auth-widget" class="text-xs">
+                    </div>
+            </div>
+
+        </div>
+    </header>
+
+    <div id="status-banner" class="bg-bgSurface border-b border-borderZinc py-2.5 px-4 text-xs w-full">
+        <div class="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-2">
+            <span class="text-zinc-400">Status: <span class="text-emerald-500 font-mono">● Online</span> | Total configurations listed: <span id="db-counter" class="font-mono text-zinc-200">0</span></span>
+            <div class="flex gap-3">
+                <button onclick="switchTab('feed')" class="hover:text-zinc-100 text-zinc-400 transition underline">FFLAG Database</button>
+                <button onclick="switchTab('faq')" class="hover:text-zinc-100 text-zinc-400 transition underline">FAQ Guide</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-5xl w-full mx-auto px-4 py-6 flex-grow flex flex-col md:flex-row gap-6 overflow-hidden">
+
+        <aside class="w-full md:w-48 shrink-0 flex flex-col gap-5">
+            <div>
+                <p class="text-[11px] font-bold text-zinc-500 tracking-wider uppercase mb-2 font-mono">Platform target</p>
+                <div class="flex flex-col gap-1" id="bootstrapper-filters">
+                    <button onclick="filterBootstrapper('All')" class="category-btn text-left text-xs px-2.5 py-1.5 rounded transition text-zinc-100 bg-zinc-800 font-mono">
+                        [ All platforms ]
+                    </button>
+                    <button onclick="filterBootstrapper('Bloxtrap')" class="category-btn text-left text-xs px-2.5 py-1.5 rounded transition text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 font-mono">
+                        Bloxtrap
+                    </button>
+                    <button onclick="filterBootstrapper('FishTrap')" class="category-btn text-left text-xs px-2.5 py-1.5 rounded transition text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 font-mono">
+                        FishTrap
+                    </button>
+                    <button onclick="filterBootstrapper('VoidsTrap')" class="category-btn text-left text-xs px-2.5 py-1.5 rounded transition text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 font-mono">
+                        VoidsTrap
+                    </button>
+                    <button onclick="filterBootstrapper('Others')" class="category-btn text-left text-xs px-2.5 py-1.5 rounded transition text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 font-mono">
+                        Others
+                    </button>
+                </div>
+            </div>
+
+            <div class="border-t border-borderZinc pt-4">
+                <p class="text-[11px] font-bold text-zinc-500 tracking-wider uppercase mb-1 font-mono">About</p>
+                <p class="text-xs text-zinc-500 leading-relaxed">
+                    This is a flat community paste registry. Upload raw <code>.txt</code> or <code>.json</code> client files to share fast flags quickly. No tracking.
+                </p>
+            </div>
+        </aside>
+
+        <section class="flex-grow w-full overflow-hidden">
+            
+            <div id="status-notifier" class="hidden mb-4 p-3 bg-zinc-900/40 border border-borderZinc text-xs text-zinc-300 flex items-center justify-between rounded max-w-full">
+                <span id="status-notifier-text" class="truncate mr-2"></span>
+                <button onclick="document.getElementById('status-notifier').classList.add('hidden')" class="text-zinc-500 hover:text-zinc-300 font-mono shrink-0">[x]</button>
+            </div>
+
+            <div id="tab-feed" class="tab-content flex flex-col gap-4 w-full">
+                <div class="flex items-center justify-between border-b border-borderZinc pb-2 text-zinc-500 text-xs w-full">
+                    <div>Configurations</div>
+                    <div class="flex items-center gap-2">
+                        <span>Sort:</span>
+                        <select id="sort-select" onchange="applySortingAndFiltering()" class="bg-bgMain border border-borderZinc text-xs text-zinc-400 px-2 py-0.5 rounded focus:outline-none focus:border-zinc-500 font-mono">
+                            <option value="recent">Most Recent</option>
+                            <option value="popular">Most Copied</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="fflag-list" class="flex flex-col divide-y divide-borderZinc w-full">
+                    </div>
+            </div>
+
+            <div id="tab-faq" class="tab-content hidden space-y-6 w-full">
+                <div class="border border-borderZinc rounded p-6 bg-bgSurface/30 max-w-full">
+                    <h2 class="text-white font-bold mb-4 font-mono">Documentation / FAQ</h2>
+                    
+                    <div class="space-y-4 text-xs">
+                        <div>
+                            <h4 class="font-bold text-zinc-200 mb-1">1. What is an FFLAG?</h4>
+                            <p class="text-zinc-400">Fast Flags are developer options stored inside Roblox engine configurations to enable/disable visual filters, diagnostics, and internal system updates.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-zinc-200 mb-1">2. How do I apply these presets?</h4>
+                            <p class="text-zinc-400">Copy the JSON lines from any listed post. Paste them directly into the "Import JSON" area inside your launcher client's Fast Flag Editor.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-zinc-200 mb-1">3. Can I upload any raw .txt file?</h4>
+                            <p class="text-zinc-400">Yes. Simply click the custom file select button in the upload popup box to import standard text configuration lines automatically.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-profile" class="tab-content hidden space-y-4 w-full">
+                <div class="border border-borderZinc rounded p-5 bg-bgSurface/60 flex items-center justify-between max-w-full">
+                    <div>
+                        <h2 id="profile-username" class="text-white font-bold font-mono">Guest Mode</h2>
+                        <p id="profile-bio" class="text-xs text-zinc-500 mt-1">Logged in to track custom edits.</p>
+                    </div>
+                    <button onclick="logoutUser()" class="text-xs text-rose-400 hover:underline">Log Out</button>
+                </div>
+                
+                <div>
+                    <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-wider font-mono mb-2">My Posts</h3>
+                    <div id="profile-fflag-list" class="flex flex-col divide-y divide-borderZinc w-full">
+                        </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <div id="upload-modal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-bgSurface border border-borderZinc w-full max-w-lg p-5 rounded max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-borderZinc pb-3 mb-4">
+                <span class="font-mono text-xs font-bold uppercase text-white">Create Paste / Upload Tweak</span>
+                <button onclick="closeUploadModal()" class="text-zinc-500 hover:text-zinc-200 font-mono">[ Close ]</button>
+            </div>
+
+            <form id="upload-form" onsubmit="handleFormSubmit(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-zinc-400 mb-1 font-mono">Tweak Name / Title</label>
+                    <input type="text" id="flag-title" required placeholder="e.g., Frame Skip Fix / Graphics Level 21 Bypass" class="w-full bg-bgMain border border-borderZinc rounded px-3 py-2 text-zinc-100 focus:outline-none focus:border-zinc-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-zinc-400 mb-1 font-mono">Target Platform</label>
+                        <select id="flag-bootstrapper" class="w-full bg-bgMain border border-borderZinc rounded px-3 py-2 text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono">
+                            <option value="Bloxtrap">Bloxtrap</option>
+                            <option value="FishTrap">FishTrap</option>
+                            <option value="VoidsTrap">VoidsTrap</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-zinc-400 mb-1 font-mono">Optimization Type</label>
+                        <select id="flag-category" class="w-full bg-bgMain border border-borderZinc rounded px-3 py-2 text-zinc-100 focus:outline-none focus:border-zinc-500 font-mono">
+                            <option value="Performance">Performance Boost</option>
+                            <option value="Graphics">Quality & Graphics</option>
+                            <option value="Network">Connection & Latency</option>
+                            <option value="UI">Classic User Interface</option>
+                            <option value="Utility">General Utility</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-zinc-400 mb-1 font-mono">Configuration Description</label>
+                    <textarea id="flag-description" required rows="2" placeholder="Detail standard benchmarks, framerate benefits, or installation requirements..." class="w-full bg-bgMain border border-borderZinc rounded px-3 py-2 text-zinc-100 focus:outline-none focus:border-zinc-500 resize-none"></textarea>
+                </div>
+
+                <div class="border border-borderZinc rounded p-3 bg-bgMain flex items-center justify-between">
+                    <div class="mr-2">
+                        <p class="font-mono text-zinc-300 font-bold">Import Plain Text File</p>
+                        <p class="text-[10px] text-zinc-500">Select .txt or .json configuration strings to import.</p>
+                    </div>
+                    <div class="shrink-0">
+                        <button type="button" onclick="document.getElementById('file-uploader').click()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded font-semibold text-[11px] transition">
+                            Browse File
+                        </button>
+                        <input type="file" id="file-uploader" accept=".txt,.json" onchange="processUploadedFile(this)" class="hidden">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-zinc-400 mb-1 font-mono">Configuration Parameters (Raw JSON)</label>
+                    <textarea id="flag-code" required rows="4" placeholder='{&#10;  "FFlagDisableTelemetry": "True"&#10;}' class="w-full bg-bgMain font-mono text-xs border border-borderZinc rounded p-3 text-emerald-400 placeholder-emerald-900/40 focus:outline-none focus:border-zinc-500"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeUploadModal()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded font-semibold transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-zinc-100 hover:bg-white text-black px-5 py-2 rounded font-bold transition">
+                        Submit Paste
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <div id="auth-modal" class="fixed inset-0 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-bgSurface border border-borderZinc w-full max-w-sm p-5 rounded">
+            
+            <div class="flex items-center justify-between border-b border-borderZinc pb-3 mb-4">
+                <span class="font-mono text-xs font-bold uppercase text-white">Guest Sign In</span>
+                <button onclick="closeAuthModal()" class="text-zinc-500 hover:text-zinc-200 font-mono">[ Close ]</button>
+            </div>
+
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-zinc-400 mb-1 font-mono">Choose Username</label>
+                    <input type="text" id="auth-username" required placeholder="e.g., GuestTweaker" class="w-full bg-bgMain border border-borderZinc rounded px-3 py-2 text-zinc-100 focus:outline-none focus:border-zinc-500">
+                </div>
+                <div>
+                    <label class="block text-zinc-400 mb-1 font-mono">Brief Profile Bio (Optional)</label>
+                    <textarea id="auth-bio" rows="2" placeholder="e.g., Core Bloxtrap optimize parameters focus." class="w-full bg-bgMain border border-borderZinc rounded px-3 py-2 text-zinc-100 focus:outline-none focus:border-zinc-500 resize-none"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-zinc-100 hover:bg-white text-black py-2 rounded font-bold transition">
+                    Authenticate Session
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+    <footer class="border-t border-borderZinc py-8 mt-12 bg-bgSurface/10 text-center text-xs text-zinc-600 w-full">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono">
+            <p>Paste & Post Roblox Configuration Variables. Open community.</p>
+            <div class="flex gap-4">
+                <a href="#" onclick="switchTab('faq')" class="hover:text-zinc-400 transition">How to Use</a>
+                <span>•</span>
+                <a href="#" class="hover:text-zinc-400 transition">GitHub source</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
